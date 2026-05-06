@@ -9,7 +9,9 @@ const generateRoomCode = () => {
 router.post('/', async (req, res) => {
   try {
     const code = generateRoomCode();
-    const room = new Room({ code });
+    // Generate a random token to identify the presenter
+    const presenterId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const room = new Room({ code, presenterId });
     await room.save();
     res.json(room);
   } catch (err) {

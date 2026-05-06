@@ -12,6 +12,7 @@ export default function Home() {
     try {
       const res = await fetch(`${API_URL}/rooms`, { method: 'POST' });
       const data = await res.json();
+      sessionStorage.setItem(`presenter_${data.code}`, data.presenterId);
       navigate(`/presenter/${data.code}`);
     } catch (err) {
       console.error(err);

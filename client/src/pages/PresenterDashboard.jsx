@@ -70,9 +70,11 @@ export default function PresenterDashboard() {
 
   const handleLaunch = (pollData) => {
     if (roomData) {
+      const presenterId = sessionStorage.getItem(`presenter_${roomCode}`);
       socket.emit('launch_poll', {
         roomCode,
         roomId: roomData._id,
+        presenterId,
         ...pollData
       });
     }
@@ -80,7 +82,8 @@ export default function PresenterDashboard() {
 
   const handleClose = () => {
     if (activePoll && activePoll.status === 'active') {
-      socket.emit('close_poll', { roomCode, pollId: activePoll._id });
+      const presenterId = sessionStorage.getItem(`presenter_${roomCode}`);
+      socket.emit('close_poll', { roomCode, pollId: activePoll._id, presenterId });
     }
   };
 
