@@ -37,9 +37,15 @@ const setupSocket = (io) => {
     });
 
     // Presenter launches a poll
-    socket.on('launch_poll', async ({ roomCode, roomId, question, options, votingMode, pointsPerUser }) => {
+    socket.on('launch_poll', async ({ roomCode, roomId, presenterId, question, options, votingMode, pointsPerUser }) => {
       const code = roomCode.toUpperCase();
       
+      // Validate presenter
+      const room = await require('../models/Room').findById(roomId);
+      if (!room || room.presenterId !== presenterId) {
+        return socket.emit('error', { message: 'Unauthorized: Only the presenter can launch polls' });
+      }
+
       // Close any currently active poll for this room
       await Poll.updateMany({ roomId, status: 'active' }, { status: 'closed' });
       
@@ -106,12 +112,22 @@ const setupSocket = (io) => {
     });
 
     // Presenter closes a poll
-    socket.on('close_poll', async ({ roomCode, pollId }) => {
+    socket.on('close_poll', async ({ roomCode, pollId, presenterId }) => {
       const code = roomCode.toUpperCase();
-      const poll = await Poll.findByIdAndUpdate(pollId, { status: 'closed' }, { new: true });
       
-      if (poll) {
-        io.to(code).emit('poll_closed', poll);
+      const poll = await Poll.findById(pollId);
+      if (!poll) return;
+
+      // Validate presenter
+      const room = await require('../models/Room').findById(poll.roomId);
+      if (!room || room.presenterId !== presenterId) {
+        return socket.emit('error', { message: 'Unauthorized: Only the presenter can close polls' });
+      }
+
+      const updatedPoll = await Poll.findByIdAndUpdate(pollId, { status: 'closed' }, { new: true });
+      
+      if (updatedPoll) {
+        io.to(code).emit('poll_closed', updatedPoll);
         const results = await getPollResults(pollId);
         io.to(code).emit('poll_results', { pollId, ...results, final: true });
       }
